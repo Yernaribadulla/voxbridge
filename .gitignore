@@ -7,5 +7,5 @@ dist/
 *.log
 .env
 models/
-audio/
+/recordings/
 transcripts/
