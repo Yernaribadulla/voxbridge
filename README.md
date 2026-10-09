@@ -29,6 +29,8 @@ Install LM Studio, load a translation-capable instruction model, enable its loca
 - `Ctrl+Shift+P`: pause/resume audio processing.
 - Tray menu: show/hide, pause/resume, settings, exit.
 
+The overlay follows the supplied reference: dark translucent wide panel, separate source/translation rows, and a microphone push-to-talk strip. Each text block is limited to two lines; the text fades out after 6.5 seconds without a new speech result. The bottom strip turns bright green while Mouse 5 is held.
+
 The overlay is frameless, always on top, and draggable. Borderless windowed mode is recommended; a normal Qt window is not guaranteed above exclusive-fullscreen games. Audio is processed in memory and not saved. VoxBridge does not upload audio/transcripts, collect telemetry, or silently fall back to a remote service. A non-local translation endpoint receives transcript text.
 
 ## Architecture and limitations

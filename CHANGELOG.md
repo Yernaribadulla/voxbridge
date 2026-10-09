@@ -1,4 +1,7 @@
 # Changelog
+## 0.3.0
+- Restyled the overlay to match the supplied reference, with bounded two-line text, a 6.5-second fade, and a highlighted active-microphone strip.
+
 ## 0.2.0
 - Connected WASAPI speaker loopback and microphone capture to the Whisper and LM Studio pipeline.
 - Added settings for devices, multilingual model, compute type, API endpoint/model, Mouse 5 rebinding, global shortcuts, and real-time overlay status.

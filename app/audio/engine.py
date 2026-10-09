@@ -48,6 +48,7 @@ class AudioEngine(QObject):
             self._capture=CaptureThread('partner',self.settings.system_device,self.router.decision().generation,self.router,self._submit,self.signals.error.emit)
             self._capture.start(); self.signals.route.emit('PARTNER · EN → RU'); self.signals.status.emit('Слушаю системный звук. Удерживайте Mouse 5 для ответа.')
         except Exception as exc:
+            self._started=False
             self.signals.error.emit(f'Не удалось загрузить Whisper: {exc}')
     def request_ptt(self):
         if not self._ready: return
