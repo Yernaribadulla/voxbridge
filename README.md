@@ -10,12 +10,14 @@ The repository includes a real PySide6 overlay/tray entry point, centralized exc
 
 ```powershell
 cd C:\Users\user\Desktop\ACTIVE\VoxBridge
-py -3.11 -m venv .venv
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python -m app
 ```
+
+If `py -3.11` is unavailable, use the installed Python version. Activation is optional; the reliable form is `.\.venv\Scripts\python.exe -m app`.
 
 In LM Studio load a translation-capable instruction model and start its local server at `http://localhost:1234`; enter its exact model id in settings when the full settings UI is enabled. First speech-model downloads require internet access. After model files are present and LM Studio is local, audio/translations can remain local. No telemetry, raw audio persistence, cloud speech recognition, or silent remote fallback is implemented.
 
