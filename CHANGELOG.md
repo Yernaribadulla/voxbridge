@@ -1,4 +1,7 @@
 # Changelog
+## 0.3.1
+- Fixed settings Save handling; selected devices and model ID now persist after accepting the dialog.
+
 ## 0.3.0
 - Restyled the overlay to match the supplied reference, with bounded two-line text, a 6.5-second fade, and a highlighted active-microphone strip.
 

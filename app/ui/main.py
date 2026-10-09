@@ -2,7 +2,7 @@ import sys
 from PySide6.QtCore import Qt,Signal,QTimer,QPropertyAnimation,QEasingCurve
 from PySide6.QtGui import QFontMetrics,QFont
 from PySide6.QtWidgets import (QApplication,QLabel,QVBoxLayout,QHBoxLayout,QWidget,
-    QSystemTrayIcon,QMenu,QStyle,QPushButton,QMessageBox,QFrame,QGraphicsOpacityEffect)
+    QSystemTrayIcon,QMenu,QStyle,QPushButton,QMessageBox,QFrame,QGraphicsOpacityEffect,QDialog)
 from app.audio.engine import AudioEngine
 from app.config import load,save
 from app.core.state import AudioRouter
@@ -147,7 +147,7 @@ class Overlay(QWidget):
             self._running=False; self.start_btn.setEnabled(True); self.start_btn.setText('▶'); self.heading.setText('VOXBRIDGE · ОШИБКА'); self.led.setStyleSheet('color:#ff6874;font-size:17px;border:0;background:transparent')
     def open_settings(self):
         dialog=SettingsDialog(self.settings,self)
-        if dialog.exec()!=dialog.Accepted or dialog.result_settings is None: return
+        if dialog.exec()!=QDialog.DialogCode.Accepted or dialog.result_settings is None: return
         was_started=self.engine._started
         self.engine.close(); self.hook.stop(); self.settings=dialog.result_settings; save(self.settings)
         self.router=AudioRouter(); self.engine=self._new_engine(); self._wire_engine(self.engine)
@@ -157,6 +157,7 @@ class Overlay(QWidget):
         try: self.hook.start()
         except Exception as exc: self.show_error(f'Хук кнопки мыши: {exc}')
         self._running=False; self.start_btn.setEnabled(True); self.start_btn.setText('▶'); self.heading.setText('VOXBRIDGE · ОСТАНОВЛЕНО'); self.led.setStyleSheet('color:#727b89;font-size:17px;border:0;background:transparent')
+        self.status.setText('Настройки сохранены. Нажмите ▶ для запуска.')
         if was_started: self.start_processing()
     def toggle_visible(self): self.hide() if self.isVisible() else self.show()
     def mousePressEvent(self,event):

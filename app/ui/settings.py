@@ -11,7 +11,7 @@ class _TestResult(QObject): finished=Signal(str)
 
 class SettingsDialog(QDialog):
     def __init__(self,current,parent=None):
-        super().__init__(parent); self._current=current; self.setWindowTitle('Настройки VoxBridge'); self.resize(520,300); self.result_settings=None
+        super().__init__(parent); self._current=current; self.setWindowTitle('Настройки VoxBridge'); self.setMinimumSize(560,380); self.resize(620,410); self.result_settings=None
         root=QVBoxLayout(self); form=QFormLayout(); root.addLayout(form)
         self.endpoint=QLineEdit(current.translation_url); self.model=QLineEdit(current.translation_model); self.model.setPlaceholderText('ID модели из списка LM Studio')
         self.mic=self._devices(input_devices,current.mic_device,'Микрофон недоступен')
@@ -21,7 +21,7 @@ class SettingsDialog(QDialog):
         self.compute=QComboBox(); self.compute.addItem('int8','int8'); self.compute.addItem('float16','float16'); self.compute.addItem('int8_float16','int8_float16'); self.compute.setCurrentIndex(max(0,self.compute.findData(current.compute_type)))
         self.button=QComboBox(); self.button.addItem('Mouse 5 / X2','x2'); self.button.addItem('Mouse 4 / X1','x1'); self.button.setCurrentIndex(max(0,self.button.findData(current.ptt_button)))
         form.addRow('LM Studio API',self.endpoint); form.addRow('ID модели перевода',self.model); form.addRow('Микрофон',self.mic); form.addRow('Системный звук',self.speaker); form.addRow('Whisper (русский + английский)',self.whisper); form.addRow('Устройство вычислений',self.device); form.addRow('Тип вычислений',self.compute); form.addRow('Кнопка push-to-talk',self.button)
-        self.result=_TestResult(); self.result.finished.connect(self._show_test); self.test_status=QLabel(''); test_row=QHBoxLayout(); self.test_btn=QPushButton('Проверить LM Studio'); self.test_btn.clicked.connect(self.test_connection); test_row.addWidget(self.test_btn); test_row.addWidget(self.test_status,1); root.addLayout(test_row)
+        self._test_result=_TestResult(); self._test_result.finished.connect(self._show_test); self.test_status=QLabel(''); test_row=QHBoxLayout(); self.test_btn=QPushButton('Проверить LM Studio'); self.test_btn.clicked.connect(self.test_connection); test_row.addWidget(self.test_btn); test_row.addWidget(self.test_status,1); root.addLayout(test_row)
         buttons=QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel); buttons.accepted.connect(self.accept); buttons.rejected.connect(self.reject); root.addWidget(buttons)
     @staticmethod
     def _devices(loader,selected,missing):
@@ -36,7 +36,7 @@ class SettingsDialog(QDialog):
         return combo
     def test_connection(self):
         self.test_btn.setEnabled(False); self.test_status.setText('Подключаюсь…')
-        endpoint=self.endpoint.text().strip(); model=self.model.text().strip(); signals=self.result
+        endpoint=self.endpoint.text().strip(); model=self.model.text().strip(); signals=self._test_result
         def work():
             try:
                 ids=LMStudioProvider(endpoint,model,timeout=5).test_connection()
