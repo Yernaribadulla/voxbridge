@@ -234,6 +234,7 @@ class Overlay(QWidget):
             and state not in (State.PAUSED, State.ERROR, State.STOPPING)
         )
 
+    @Slot()
     def start_or_pause(self):
         if self.preview or self._closed or self._retired:
             return
@@ -365,6 +366,7 @@ class Overlay(QWidget):
         self.fade_animation.setStartValue(self.text_effect.opacity())
         self.fade_animation.start()
 
+    @Slot()
     def open_settings(self):
         dialog = SettingsDialog(self.settings, self, preview=self.preview)
         if (
@@ -419,6 +421,7 @@ class Overlay(QWidget):
             )
         self._update_controls()
 
+    @Slot()
     def toggle_visible(self):
         self.hide() if self.isVisible() else self.show()
 

@@ -5,6 +5,7 @@
 - Added bounded microphone-first recognition and translation queues, preserving microphone work on overload.
 - Reject audio crossing route boundaries; preserve the final microphone block after release.
 - Check engine identity, generation and sequence again at GUI delivery; restart result ordering after settings changes.
+- Register GUI receivers for hotkeys and background connection-test results as Qt Slots.
 - Release retired model resources after workers stop and prevent overlapping model reloads.
 - Added explicit error handling/retry for failed capture and bounded LM Studio response contracts.
 - Added validated atomic settings, environment overrides, CPU compute safeguards, font/opacity controls and a preview mode without audio/hooks/models.

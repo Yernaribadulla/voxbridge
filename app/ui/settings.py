@@ -2,7 +2,7 @@
 
 import threading
 from dataclasses import replace
-from PySide6.QtCore import QObject, Signal, Qt
+from PySide6.QtCore import QObject, Signal, Slot, Qt
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -183,6 +183,7 @@ class SettingsDialog(QDialog):
             target=work, name="voxbridge-connection-test", daemon=True
         ).start()
 
+    @Slot(str)
     def _show_test(self, message):
         self.test_status.setText(message)
         self.test_btn.setEnabled(True)
