@@ -1,8 +1,1 @@
-PySide6>=6.7
-numpy>=1.26
-SoundCard>=0.4.6
-faster-whisper>=1.1.0
-pynput>=1.7.7
-requests>=2.32
-pytest>=8.0
-pyinstaller>=6.0
+-e .[speech]

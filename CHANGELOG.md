@@ -1,4 +1,16 @@
 # Changelog
+
+## 0.4.0
+- Fixed the global mouse callback signature and duplicate/held-button handling; failed keyboard-hook startup now cleans up the mouse listener.
+- Added bounded microphone-first recognition and translation queues, preserving microphone work on overload.
+- Reject audio crossing route boundaries; preserve the final microphone block after release.
+- Check engine identity, generation and sequence again at GUI delivery; restart result ordering after settings changes.
+- Release retired model resources after workers stop and prevent overlapping model reloads.
+- Added explicit error handling/retry for failed capture and bounded LM Studio response contracts.
+- Added validated atomic settings, environment overrides, CPU compute safeguards, font/opacity controls and a preview mode without audio/hooks/models.
+- Separated text widgets and QSS from overlay control; corrected packaging paths and included the theme in Python wheels/PyInstaller data.
+- Added hardware-free regression tests and Windows/Linux CI.
+
 ## 0.3.1
 - Fixed settings Save handling; selected devices and model ID now persist after accepting the dialog.
 

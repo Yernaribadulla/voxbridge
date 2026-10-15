@@ -1,49 +1,133 @@
 # VoxBridge
 
-VoxBridge is a Windows desktop voice translator for games and live conversations. It captures speaker loopback, recognizes the partner's English, translates it to Russian, and displays both in an always-on-top overlay. Hold Mouse 5 to switch transcription to your microphone; your Russian speech is translated to English. The routing state changes before GUI or inference work, and partner frames/results are rejected during push-to-talk.
+Локальный голосовой переводчик для Windows 10/11: английская речь собеседника из системного звука → русские субтитры; удержание Mouse 5 переключает приоритет на микрофон и переводит ваш русский ответ на английский.
 
-## Install and run
+**Версия 0.4.0.** Распознавание выполняет один общий мультиязычный Whisper, перевод — выбранная модель в LM Studio. Микрофон имеет приоритет на захвате, в очередях и при показе результата. Это приложение для субтитров: оно не озвучивает перевод и не отправляет голос в игровой чат.
 
-Windows 10/11, Python 3.11+ (Python 3.14 works when the optional dependencies provide wheels), a microphone, a playback device, and local LM Studio are needed.
+## Установка
+
+Рекомендуется Python 3.11. Python 3.14 поддерживается при наличии совместимых wheels аудио/ML-зависимостей.
 
 ```powershell
-cd C:\Users\user\Desktop\ACTIVE\VoxBridge
+git clone https://github.com/Yernaribadulla/voxbridge.git
+cd voxbridge
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m app
 ```
 
-Activation is optional. In PowerShell, if desired, run `Set-ExecutionPolicy -Scope Process Bypass` and then `\.venv\Scripts\Activate.ps1`.
+Альтернатива: запустите `scripts/setup_windows.ps1`. Скрипт использует корень репозитория независимо от текущей папки, останавливается при ошибках установки и **не запускает VoxBridge**. Активация окружения и изменение ExecutionPolicy не требуются для приведённых команд.
 
-## First setup
+## Первая настройка
 
-Open Settings. Select the physical microphone and the speaker/output endpoint to capture. Select multilingual Whisper `base` or `small`; do not select English-only `tiny.en` for Russian microphone speech. Choose CPU (`int8`) for compatibility, or NVIDIA CUDA (`float16`) if CTranslate2 and compatible NVIDIA CUDA/cuDNN libraries are installed. If CUDA fails, switch to CPU.
+1. Откройте «Настройки». Явно выберите физический микрофон и выходное устройство, звук которого нужно переводить.
+2. Выберите мультиязычный Whisper `base` или `small`. Англоязычные `.en`-модели не подходят для русского ответа.
+3. Начните с CPU / `int8`. CUDA требует совместимых NVIDIA CUDA/cuDNN и CTranslate2; при CUDA можно выбрать `float16` или `int8_float16`.
+4. В LM Studio загрузите инструкционную модель, подходящую для перевода, и включите локальный сервер. Укажите endpoint, обычно `http://localhost:1234/v1`, и точный ID модели.
+5. Нажмите «Проверить соединение», сохраните настройки и запустите обработку. Перед загрузкой Whisper приложение спрашивает подтверждение. Первое получение весов требует интернета; дальше используется локальный кэш.
 
-Install LM Studio, load a translation-capable instruction model, enable its local server, and use `http://localhost:1234/v1` unless you intentionally configure another endpoint. Enter the model ID shown in LM Studio, then run the connection test. Without a model ID VoxBridge can recognize speech but cannot translate it. Starting VoxBridge asks before loading Whisper; the first model download needs internet and its size varies by model/backend. Models are cached locally.
+Сохранённое, но отключённое устройство отображается как недоступное и не заменяется другим микрофоном молча. После изменения настроек обработку нужно запустить явно. Пока прежний native-вызов не завершился, новый запуск недоступен, чтобы не загружать вторую копию Whisper параллельно.
 
-## Controls
+## Управление
 
-- Mouse 5 / X2: hold to speak Russian. The in-window hold button is available if a game blocks the global hook.
-- `Ctrl+Shift+V`: show/hide the overlay.
-- `Ctrl+Shift+P`: pause/resume audio processing.
-- Tray menu: show/hide, pause/resume, settings, exit.
+| Действие | Управление |
+| --- | --- |
+| Ответить на русском | Удерживать Mouse 5 / X2 или кнопку микрофона в окне |
+| Переназначить PTT | Mouse 4 / X1 в настройках |
+| Показать / скрыть окно | `Ctrl+Shift+V` или трей |
+| Запуск / пауза | `Ctrl+Shift+P`, кнопка окна или трей |
+| Передвинуть overlay | Перетащить за верхнюю часть панели |
+| Изменить читаемость | Размер субтитров и непрозрачность в настройках |
+| Завершить приложение | «Выход» в трее |
 
-The overlay follows the supplied reference: dark translucent wide panel, separate source/translation rows, and a microphone push-to-talk strip. Each text block is limited to two lines; the text fades out after 6.5 seconds without a new speech result. The bottom strip turns bright green while Mouse 5 is held.
+PTT не подавляет исходную кнопку мыши: игра продолжает её получать. Если игра блокирует глобальный hook, остаётся кнопка в окне. Обычное Qt-окно не гарантированно отображается над exclusive-fullscreen игрой; используйте borderless windowed.
 
-The overlay is frameless, always on top, and draggable. Borderless windowed mode is recommended; a normal Qt window is not guaranteed above exclusive-fullscreen games. Audio is processed in memory and not saved. VoxBridge does not upload audio/transcripts, collect telemetry, or silently fall back to a remote service. A non-local translation endpoint receives transcript text.
+Оригинал и перевод занимают не более двух строк; длинный текст сокращается многоточием, полный фрагмент доступен в подсказке. Через 6.5 секунды без новых результатов текст приглушается. Во время PTT нижняя полоса меняет цвет и подпись. Отказ перевода отображается явно, распознанная речь остаётся видимой.
 
-## Architecture and limitations
+## Как устроен приоритет
 
-`app/core/state.py` owns route priority and generations. `app/audio/capture.py` uses SoundCard/WASAPI for microphone and speaker loopback, with short blocks and energy-based segmentation. `app/audio/engine.py` loads one multilingual faster-whisper model, prioritizes microphone jobs, rejects stale partner results, and calls LM Studio asynchronously. One Whisper model is shared across both directions to avoid holding two copies in GPU memory.
+```text
+WASAPI loopback ─┐
+                ├─→ generation guard → bounded recognition queue → shared Whisper
+Microphone PTT ─┘                            ↓ microphone first
+                        bounded translation queue → 2 LM Studio workers
+                                          ↓
+                       engine + generation + sequence guard → overlay
+```
 
-An inference call already in progress when Mouse 5 is pressed cannot be interrupted inside CTranslate2; its output is discarded, queued partner segments are invalidated, and no new partner segment is submitted while PTT is held. Latency and accuracy depend on the speech/translation models, hardware, and game load. LM Studio runs separately and needs its own memory/VRAM.
+- Нажатие PTT меняет маршрут синхронно в callback до работы GUI.
+- Аудиоблок, пересёкший смену маршрута, отбрасывается. Старый partner-буфер не получает новое поколение.
+- Очереди распознавания и перевода ограничены восемью ожидающими заданиями каждая.
+- На переполнении сохраняется более свежая работа. Partner-задание не вытесняет микрофон; при PTT задания старого поколения удаляются из обеих очередей.
+- Уже выполняющиеся Whisper/HTTP-вызовы не прерываются насильно, но их устаревший результат отвергается, в том числе при доставке в GUI.
+- После смены настроек результаты прежнего экземпляра движка также не отображаются. После освобождения старых потоков ссылки на его модель удаляются.
 
-## Development
+Это **модульное настольное приложение**, а не сетевой монолит. Распознавание и очереди оставлены в одном процессе, чтобы передавать аудио в памяти без HTTP-сериализации и дополнительных процессов с моделями. LM Studio уже является отдельным сервисом. Подробнее: [архитектура](docs/architecture.md).
+
+## Данные и конфигурация
+
+Настройки сохраняются атомарно в `%LOCALAPPDATA%\VoxBridge\settings.json`. Повреждённое поле восстанавливается отдельно; неизвестные поля не сбрасывают всю конфигурацию. Настройки не содержат записей разговоров.
+
+Аудио и субтитры обрабатываются в памяти; сохранение истории, запись звука, телеметрия и cloud fallback не реализованы. При паузе микрофон останавливается и новые сегменты не обрабатываются; поток системного loopback остаётся открытым и отбрасывает блоки. Выход останавливает capture и фоновые очереди.
+
+Текст получает **указанный вами endpoint**. Если это внешний адрес, текст покидает ПК. HTTP redirects отклоняются, системные proxy-переменные не используются для запросов перевода. Это не мешает явно выбрать удалённый сервер; транспорт HTTPS для него должен обеспечивать владелец.
+
+Можно переопределить endpoint и модель переменными процесса:
 
 ```powershell
+$env:VOXBRIDGE_TRANSLATION_URL = 'http://localhost:1234/v1'
+$env:VOXBRIDGE_TRANSLATION_MODEL = 'your-loaded-model-id'
+```
+
+Они имеют приоритет над сохранёнными настройками. `.env.example` — шаблон названий переменных; файл `.env` автоматически не загружается. API-ключ OpenAI не требуется: интеграция предназначена для LM Studio.
+
+## Разработка и тесты
+
+Для проверок не нужны Whisper-веса, GPU, LM Studio, реальные аудиоустройства или глобальные hooks:
+
+```powershell
+python -m pip install -e ".[test]"
+python -m compileall -q app tests
 python -m pytest -q
+```
+
+CI проверяет Windows с Python 3.11/3.14 и Ubuntu с Python 3.11. Тесты подменяют захват, распознавание, hooks и HTTP; окно приложения не запускается. CPU/GPU производительность, реальные драйверы и работа поверх конкретной игры требуют отдельной проверки на целевой машине.
+
+Необязательный preview для ручной проверки интерфейса:
+
+```powershell
+python -m app --preview
+```
+
+Preview показывает пример текста, не включает hooks/захват/Whisper, не обращается к LM Studio и не сохраняет настройки. Это отдельный явный режим; setup и тесты его не запускают.
+
+## Сборка
+
+```powershell
+python -m pip install -e ".[speech,build]"
 python -m PyInstaller packaging/voxbridge.spec
 ```
 
-Automated tests do not require a GPU, model weights, physical audio devices, or LM Studio. Check actual audio devices, global hooks in games, and CUDA on the target PC. Do not commit secrets, recordings, transcripts, model caches, logs, or virtual environments. MIT license; third-party dependencies keep their own licenses.
+Команду выполняют из корня репозитория. Результат — папка `dist/VoxBridge/` с `VoxBridge.exe` и зависимостями; переносить нужно всю папку. Весов моделей в ней нет. Spec использует абсолютные пути относительно своего расположения и включает QSS-тему, данные SoundCard и faster-whisper.
+
+Для Python-пакета: `python -m pip wheel --no-deps --wheel-dir wheelhouse .`. Wheel сам по себе не включает сторонние библиотеки или модели.
+
+## Структура
+
+| Модуль | Ответственность |
+| --- | --- |
+| `app/core/state.py` | Состояние маршрута и поколения |
+| `app/core/jobs.py` | Ограниченные очереди с приоритетом микрофона |
+| `app/core/results.py` | Порядок и допустимость результатов для GUI |
+| `app/audio/capture.py` | WASAPI, downmix, сегментация и границы маршрута |
+| `app/audio/engine.py` | Жизненный цикл capture, Whisper и translation workers |
+| `app/speech/whisper.py` | Lazy-загрузка одного Whisper |
+| `app/translation/lmstudio.py` | Ограниченный HTTP-клиент и проверка ответа |
+| `app/ui/` | Overlay, настройки, текстовые виджеты и тема |
+| `app/input_hook.py` | Глобальная мышь и hotkeys |
+| `app/config.py` | Нормализация и атомарное сохранение настроек |
+
+[Отчёт проверки](docs/audit.md) · [Изменения](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
+
+MIT. Сторонние библиотеки и модели распространяются на условиях их собственных лицензий.
